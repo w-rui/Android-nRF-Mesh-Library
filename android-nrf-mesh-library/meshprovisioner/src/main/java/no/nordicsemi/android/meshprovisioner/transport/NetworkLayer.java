@@ -24,8 +24,6 @@ package no.nordicsemi.android.meshprovisioner.transport;
 import android.util.Log;
 import android.util.SparseArray;
 
-import org.spongycastle.crypto.InvalidCipherTextException;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -343,7 +341,7 @@ abstract class NetworkLayer extends LowerTransportLayer {
                 parseAccessLayerPDU(message);
                 return message;
             }
-        } catch (InvalidCipherTextException ex) {
+        } catch (ExtendedInvalidCipherTextException ex) {
             throw new ExtendedInvalidCipherTextException(ex.getMessage(), ex.getCause(), TAG);
         }
     }
@@ -404,7 +402,7 @@ abstract class NetworkLayer extends LowerTransportLayer {
                 default:
                     return null;
             }
-        } catch (InvalidCipherTextException ex) {
+        } catch (ExtendedInvalidCipherTextException ex) {
             throw new ExtendedInvalidCipherTextException(ex.getMessage(), ex.getCause(), TAG);
         }
     }

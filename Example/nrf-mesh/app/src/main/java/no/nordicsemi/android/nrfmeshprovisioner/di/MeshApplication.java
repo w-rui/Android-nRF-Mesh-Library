@@ -24,11 +24,12 @@ package no.nordicsemi.android.nrfmeshprovisioner.di;
 
 import android.app.Activity;
 import android.app.Service;
-import androidx.multidex.MultiDexApplication;
-import androidx.appcompat.app.AppCompatDelegate;
 
 import javax.inject.Inject;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.multidex.MultiDexApplication;
 import dagger.android.AndroidInjector;
 import dagger.android.DispatchingAndroidInjector;
 import dagger.android.HasActivityInjector;
@@ -41,11 +42,16 @@ public class MeshApplication extends MultiDexApplication implements HasActivityI
     @Inject
     DispatchingAndroidInjector<Service> mServiceDispatchingAndroidInjector;
 
+    @SuppressWarnings("NullableProblems")
+    @NonNull
+    public static MeshApplication   application;
+
     @Override
     public void onCreate() {
         super.onCreate();
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
         AppInjector.init(this);
+        application = this;
     }
 
     @Override

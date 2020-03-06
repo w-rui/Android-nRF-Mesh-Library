@@ -1,11 +1,9 @@
 package no.nordicsemi.android.meshprovisioner.utils;
 
-import org.spongycastle.crypto.InvalidCipherTextException;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-public class ExtendedInvalidCipherTextException extends InvalidCipherTextException {
+public class ExtendedInvalidCipherTextException extends Exception {
 
     private final String tag;
     private final String message;

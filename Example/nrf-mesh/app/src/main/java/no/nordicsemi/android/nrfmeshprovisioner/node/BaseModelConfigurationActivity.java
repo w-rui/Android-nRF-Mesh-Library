@@ -25,6 +25,7 @@ package no.nordicsemi.android.nrfmeshprovisioner.node;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -110,6 +111,8 @@ public abstract class BaseModelConfigurationActivity extends AppCompatActivity i
 
     private static final String DIALOG_FRAGMENT_CONFIGURATION_STATUS = "DIALOG_FRAGMENT_CONFIGURATION_STATUS";
     private static final String PROGRESS_BAR_STATE = "PROGRESS_BAR_STATE";
+
+    private static final String TAG = BaseModelConfigurationActivity.class.getSimpleName();
 
     @Inject
     ViewModelProvider.Factory mViewModelFactory;
@@ -467,6 +470,7 @@ public abstract class BaseModelConfigurationActivity extends AppCompatActivity i
             if (element != null) {
                 final MeshModel model = mViewModel.getSelectedModel().getValue();
                 if (model != null) {
+                    Log.d(TAG, "bindAppKey, addr: 0x" + Integer.toHexString(meshNode.getUnicastAddress()) + ", eleAddr: " + Integer.toHexString(element.getElementAddress()) + ", modelId: 0x" + Integer.toHexString(model.getModelId()) + ", appKeyIndex: " + appKeyIndex);
                     final ConfigModelAppBind configModelAppUnbind = new ConfigModelAppBind(element.getElementAddress(), model.getModelId(), appKeyIndex);
                     sendMessage(meshNode.getUnicastAddress(), configModelAppUnbind);
                 }
@@ -488,6 +492,7 @@ public abstract class BaseModelConfigurationActivity extends AppCompatActivity i
                 if (element != null) {
                     final MeshModel model = mViewModel.getSelectedModel().getValue();
                     if (model != null) {
+                        Log.d(TAG, "unbindAppKey, addr: 0x" + Integer.toHexString(meshNode.getUnicastAddress()) + ", eleAddr: " + Integer.toHexString(element.getElementAddress()) + ", modelId: 0x" + Integer.toHexString(model.getModelId()) + ", keyIndex: " + keyIndex);
                         final ConfigModelAppUnbind configModelAppUnbind = new ConfigModelAppUnbind(element.getElementAddress(), model.getModelId(), keyIndex);
                         sendMessage(meshNode.getUnicastAddress(), configModelAppUnbind);
                     }

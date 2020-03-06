@@ -24,8 +24,6 @@ package no.nordicsemi.android.meshprovisioner.transport;
 
 import android.util.Log;
 
-import org.spongycastle.crypto.InvalidCipherTextException;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.UUID;
@@ -198,7 +196,7 @@ abstract class UpperTransportLayer extends AccessLayer {
                     }
                     break;
             }
-        } catch (InvalidCipherTextException ex) {
+        } catch (ExtendedInvalidCipherTextException ex) {
             throw new ExtendedInvalidCipherTextException(ex.getMessage(), ex.getCause(), TAG);
         }
     }
@@ -251,7 +249,7 @@ abstract class UpperTransportLayer extends AccessLayer {
      *
      * @param accessMessage Access message object containing the upper transport pdu
      */
-    private byte[] decryptUpperTransportPDU(@NonNull final AccessMessage accessMessage) throws InvalidCipherTextException {
+    private byte[] decryptUpperTransportPDU(@NonNull final AccessMessage accessMessage) throws ExtendedInvalidCipherTextException {
         byte[] decryptedUpperTransportPDU;
         final byte[] key;
         //Check if the key used for encryption is an application key or a device key

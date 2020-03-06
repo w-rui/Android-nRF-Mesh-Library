@@ -92,4 +92,6 @@ public interface MeshManagerCallbacks {
      * @return mtu size
      */
     int getMtu();
+
+    int getProvMtu(UnprovisionedMeshNode unproved);
 }

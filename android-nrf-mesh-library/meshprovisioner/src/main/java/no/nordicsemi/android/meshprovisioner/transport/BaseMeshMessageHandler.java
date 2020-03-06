@@ -26,8 +26,6 @@ import android.content.Context;
 import android.util.Log;
 import android.util.SparseArray;
 
-import org.spongycastle.crypto.InvalidCipherTextException;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.List;
@@ -156,7 +154,7 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
                             ((DefaultNoOperationMessageState) state).parseMeshPdu(node, pdu, networkHeader, decryptedNetworkPayload);
                             return;
                         }
-                    } catch (InvalidCipherTextException ex) {
+                    } catch (ExtendedInvalidCipherTextException ex) {
                         if (i == networkKeys.size() - 1) {
                             throw new ExtendedInvalidCipherTextException(ex.getMessage(), ex.getCause(), TAG);
                         }
@@ -263,6 +261,7 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
     private void createConfigMeshMessage(final int src, final int dst, @NonNull final ConfigMessage configurationMessage) {
         final ProvisionedMeshNode node = mInternalTransportCallbacks.getNode(dst);
         if (node == null) {
+            Log.d(TAG, "createConfigMeshMessage ignored because node not exist, 0x" + Integer.toHexString(dst) + ": " + configurationMessage);
             return;
         }
 

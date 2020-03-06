@@ -84,7 +84,7 @@ public final class Element implements Parcelable {
      * @param locationDescriptor location descriptor
      * @param models             models belonging to this element
      */
-    Element(final int elementAddress, final int locationDescriptor, @NonNull final Map<Integer, MeshModel> models, @NonNull final String name) {
+    public Element(final int elementAddress, final int locationDescriptor, @NonNull final Map<Integer, MeshModel> models, @NonNull final String name) {
         this.elementAddress = elementAddress;
         this.locationDescriptor = locationDescriptor;
         this.meshModels = models;

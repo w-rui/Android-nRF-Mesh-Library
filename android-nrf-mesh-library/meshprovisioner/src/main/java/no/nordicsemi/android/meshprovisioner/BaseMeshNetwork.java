@@ -872,7 +872,7 @@ abstract class BaseMeshNetwork {
      *
      * @param nodes list of {@link ProvisionedMeshNode}
      */
-    void setNodes(@NonNull List<ProvisionedMeshNode> nodes) {
+    public void setNodes(@NonNull List<ProvisionedMeshNode> nodes) {
         this.nodes = nodes;
     }
 

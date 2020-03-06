@@ -30,7 +30,7 @@ import no.nordicsemi.android.meshprovisioner.ApplicationKey;
 import no.nordicsemi.android.meshprovisioner.NetworkKey;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
-abstract class Message implements Parcelable {
+public abstract class Message implements Parcelable {
 
     protected int ctl;                              // If ctl = 0 access message and ctl = 1 control message
     protected SparseArray<byte[]> networkLayerPdu;  // Mesh pdu

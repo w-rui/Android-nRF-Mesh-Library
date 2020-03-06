@@ -13,6 +13,7 @@ import androidx.annotation.RestrictTo;
 import androidx.room.ColumnInfo;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
+import no.nordicsemi.android.meshprovisioner.utils.MeshParserUtils;
 
 abstract class MeshKey implements Parcelable, Cloneable {
 
@@ -42,7 +43,7 @@ abstract class MeshKey implements Parcelable, Cloneable {
     MeshKey(final int keyIndex, @NonNull final byte[] key) {
         this.keyIndex = keyIndex;
         if (key.length != 16) {
-            throw new IllegalArgumentException("Application key must be 16-bytes");
+            throw new IllegalArgumentException("Application key must be 16-bytes(len: " + key.length + "): " + MeshParserUtils.bytesToHex(key, true));
         }
         this.key = key;
     }

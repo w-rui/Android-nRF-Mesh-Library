@@ -197,14 +197,18 @@ public class SecureUtils {
     public static byte[] decryptCCM(@NonNull final byte[] data,
                                     @NonNull final byte[] key,
                                     @NonNull final byte[] nonce,
-                                    final int micSize) throws InvalidCipherTextException {
+                                    final int micSize) throws ExtendedInvalidCipherTextException {
         final byte[] ccm = new byte[data.length - micSize];
 
         final CCMBlockCipher ccmBlockCipher = new CCMBlockCipher(new AESEngine());
         final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce);
         ccmBlockCipher.init(false, aeadParameters);
         ccmBlockCipher.processBytes(data, 0, data.length, ccm, 0);
-        ccmBlockCipher.doFinal(ccm, 0);
+        try {
+            ccmBlockCipher.doFinal(ccm, 0);
+        } catch (InvalidCipherTextException e) {
+            throw new ExtendedInvalidCipherTextException(e.getMessage(), e.getCause(), "decryptCCM");
+        }
         return ccm;
     }
 
@@ -212,14 +216,18 @@ public class SecureUtils {
                                     @NonNull final byte[] key,
                                     @NonNull final byte[] nonce,
                                     @NonNull final byte[] additionalData,
-                                    final int micSize) throws InvalidCipherTextException {
+                                    final int micSize) throws ExtendedInvalidCipherTextException {
         final byte[] ccm = new byte[data.length - micSize];
 
         final CCMBlockCipher ccmBlockCipher = new CCMBlockCipher(new AESEngine());
         final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce, additionalData);
         ccmBlockCipher.init(false, aeadParameters);
         ccmBlockCipher.processBytes(data, 0, data.length, ccm, 0);
-        ccmBlockCipher.doFinal(ccm, 0);
+        try {
+            ccmBlockCipher.doFinal(ccm, 0);
+        } catch (InvalidCipherTextException e) {
+            throw new ExtendedInvalidCipherTextException(e.getMessage(), e.getCause(), "decryptCCM");
+        }
         return ccm;
     }
 

@@ -2,15 +2,22 @@ package no.nordicsemi.android.nrfmeshprovisioner.viewmodels;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Looper;
+import android.os.Parcel;
 import android.os.ParcelUuid;
+import android.os.Parcelable;
+import android.util.Base64;
 import android.util.Log;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 import androidx.annotation.NonNull;
@@ -18,15 +25,20 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import no.nordicsemi.android.log.LogSession;
 import no.nordicsemi.android.log.Logger;
+import no.nordicsemi.android.meshprovisioner.AllocatedGroupRange;
+import no.nordicsemi.android.meshprovisioner.AllocatedSceneRange;
+import no.nordicsemi.android.meshprovisioner.AllocatedUnicastRange;
 import no.nordicsemi.android.meshprovisioner.ApplicationKey;
 import no.nordicsemi.android.meshprovisioner.Group;
 import no.nordicsemi.android.meshprovisioner.MeshManagerApi;
 import no.nordicsemi.android.meshprovisioner.MeshManagerCallbacks;
 import no.nordicsemi.android.meshprovisioner.MeshNetwork;
+import no.nordicsemi.android.meshprovisioner.MeshNetworkCallbacks;
 import no.nordicsemi.android.meshprovisioner.MeshProvisioningStatusCallbacks;
 import no.nordicsemi.android.meshprovisioner.MeshStatusCallbacks;
 import no.nordicsemi.android.meshprovisioner.NetworkKey;
 import no.nordicsemi.android.meshprovisioner.Provisioner;
+import no.nordicsemi.android.meshprovisioner.Scene;
 import no.nordicsemi.android.meshprovisioner.UnprovisionedBeacon;
 import no.nordicsemi.android.meshprovisioner.models.SigModelParser;
 import no.nordicsemi.android.meshprovisioner.provisionerstates.ProvisioningState;
@@ -58,6 +70,7 @@ import no.nordicsemi.android.meshprovisioner.utils.MeshAddress;
 import no.nordicsemi.android.nrfmeshprovisioner.adapter.ExtendedBluetoothDevice;
 import no.nordicsemi.android.nrfmeshprovisioner.ble.BleMeshManager;
 import no.nordicsemi.android.nrfmeshprovisioner.ble.BleMeshManagerCallbacks;
+import no.nordicsemi.android.nrfmeshprovisioner.di.MeshApplication;
 import no.nordicsemi.android.nrfmeshprovisioner.utils.ProvisionerStates;
 import no.nordicsemi.android.nrfmeshprovisioner.utils.Utils;
 import no.nordicsemi.android.support.v18.scanner.BluetoothLeScannerCompat;
@@ -163,7 +176,9 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
         mMeshManagerApi.setMeshManagerCallbacks(this);
         mMeshManagerApi.setProvisioningStatusCallbacks(this);
         mMeshManagerApi.setMeshStatusCallbacks(this);
-        mMeshManagerApi.loadMeshNetwork();
+        mMeshManagerApi.setMeshNetworkCallbacks(this.networkCallbacks);
+        mMeshManagerApi.loadExternalNetwork(getNetwork());
+
         //Initialize the ble manager
         mBleMeshManager = bleMeshManager;
         mBleMeshManager.setGattCallbacks(this);
@@ -293,7 +308,9 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
      */
     void resetMeshNetwork() {
         disconnect();
-        mMeshManagerApi.resetMeshNetwork();
+        SharedPreferences sp = MeshApplication.application.getSharedPreferences("localNetwork", Context.MODE_PRIVATE);
+        sp.edit().clear().apply();
+        mMeshManagerApi.loadExternalNetwork(getNetwork());
     }
 
     /**
@@ -599,6 +616,9 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
 
     @Override
     public void onNetworkUpdated(final MeshNetwork meshNetwork) {
+        Log.d(TAG, "onNetworkUpdated.");
+        saveNetwork(mMeshNetwork);
+
         loadNetwork(meshNetwork);
         loadGroups();
         updateSelectedGroup();
@@ -632,12 +652,12 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
 
     @Override
     public void sendProvisioningPdu(final UnprovisionedMeshNode meshNode, final byte[] pdu) {
-        mBleMeshManager.sendPdu(pdu);
+        mBleMeshManager.sendPdu(pdu, true);
     }
 
     @Override
     public void onMeshPduCreated(final byte[] pdu) {
-        mBleMeshManager.sendPdu(pdu);
+        mBleMeshManager.sendPdu(pdu, false);
     }
 
     @Override
@@ -646,7 +666,14 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
     }
 
     @Override
+    public int getProvMtu(UnprovisionedMeshNode unproved) {
+        return mBleMeshManager.getMtuSize();
+    }
+
+    @Override
     public void onProvisioningStateChanged(final UnprovisionedMeshNode meshNode, final ProvisioningState.States state, final byte[] data) {
+        Log.d(TAG, "onProvisioningStateChanged, state: " + state + ", unproved: " + meshNode);
+
         mUnprovisionedMeshNode = meshNode;
         mUnprovisionedMeshNodeLiveData.postValue(meshNode);
         switch (state) {
@@ -663,6 +690,7 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
 
     @Override
     public void onProvisioningFailed(final UnprovisionedMeshNode meshNode, final ProvisioningState.States state, final byte[] data) {
+        Log.d(TAG, "onProvisioningFailed, state: " + state + ", unproved: " + meshNode);
         mUnprovisionedMeshNode = meshNode;
         mUnprovisionedMeshNodeLiveData.postValue(meshNode);
         if (state == ProvisioningState.States.PROVISIONING_FAILED) {
@@ -674,6 +702,7 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
 
     @Override
     public void onProvisioningCompleted(final ProvisionedMeshNode meshNode, final ProvisioningState.States state, final byte[] data) {
+        Log.d(TAG, "onProvisioningCompleted, state: " + state + ", proved: " + meshNode);
         mProvisionedMeshNode = meshNode;
         mUnprovisionedMeshNodeLiveData.postValue(null);
         mProvisionedMeshNodeLiveData.postValue(meshNode);
@@ -814,6 +843,8 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
                         final int index = node.getAddedNetKeys().get(0).getIndex();
                         final NetworkKey networkKey = mMeshNetwork.getNetKeys().get(index);
                         final ConfigAppKeyAdd configAppKeyAdd = new ConfigAppKeyAdd(networkKey, appKey);
+
+                        Log.d(TAG, "addAppKey, addr: 0x" + Integer.toHexString(node.getUnicastAddress()) + ", netKeyIndex: " + index + ", appKeyIndex: " + appKey.getKeyIndex());
                         mMeshManagerApi.createMeshPdu(node.getUnicastAddress(), configAppKeyAdd);
                     }, 1500);
                 } else {
@@ -974,6 +1005,352 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
         }
     }
 
+
+
+    private MeshNetworkCallbacks networkCallbacks = new MeshNetworkCallbacks() {
+        @Override
+        public void onMeshNetworkUpdated() {
+            Log.d(TAG, "onMeshNetworkUpdated.");
+            // saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onNetworkKeyAdded(@NonNull NetworkKey networkKey) {
+            Log.d(TAG, "onNetworkKeyAdded: " + networkKey);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onNetworkKeyUpdated(@NonNull NetworkKey networkKey) {
+            Log.d(TAG, "onNetworkKeyUpdated: " + networkKey);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onNetworkKeyDeleted(@NonNull NetworkKey networkKey) {
+            Log.d(TAG, "onNetworkKeyDeleted: " + networkKey);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onApplicationKeyAdded(@NonNull ApplicationKey applicationKey) {
+            Log.d(TAG, "onApplicationKeyAdded: " + applicationKey);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onApplicationKeyUpdated(@NonNull ApplicationKey applicationKey) {
+            Log.d(TAG, "onApplicationKeyUpdated: " + applicationKey);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onApplicationKeyDeleted(@NonNull ApplicationKey applicationKey) {
+            Log.d(TAG, "onApplicationKeyDeleted: " + applicationKey);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onProvisionerAdded(@NonNull Provisioner provisioner) {
+            Log.d(TAG, "onProvisionerAdded: " + provisioner);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onProvisionerUpdated(@NonNull Provisioner provisioner) {
+            Log.d(TAG, "onProvisionerUpdated: " + provisioner);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onProvisionersUpdated(@NonNull List<Provisioner> provisioner) {
+            Log.d(TAG, "onProvisionersUpdated: " + provisioner);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onProvisionerDeleted(@NonNull Provisioner provisioner) {
+            Log.d(TAG, "onProvisionerDeleted: " + provisioner);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onNodeDeleted(@NonNull ProvisionedMeshNode meshNode) {
+            Log.d(TAG, "onNodeDeleted: " + meshNode);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onNodeAdded(@NonNull ProvisionedMeshNode meshNode) {
+            Log.d(TAG, "onNodeAdded: " + meshNode);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onNodeUpdated(@NonNull ProvisionedMeshNode meshNode) {
+            Log.d(TAG, "onNodeUpdated: " + meshNode);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onNodesUpdated() {
+            Log.d(TAG, "onNodesUpdated.");
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onGroupAdded(@NonNull Group group) {
+            Log.d(TAG, "onGroupAdded: " + group);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onGroupUpdated(@NonNull Group group) {
+            Log.d(TAG, "onGroupUpdated: " + group);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onGroupDeleted(@NonNull Group group) {
+            Log.d(TAG, "onGroupDeleted: " + group);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onSceneAdded(@NonNull Scene scene) {
+            Log.d(TAG, "onSceneAdded: " + scene);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onSceneUpdated(@NonNull Scene scene) {
+            Log.d(TAG, "onSceneUpdated: " + scene);
+            saveNetwork(mMeshNetwork);
+        }
+
+        @Override
+        public void onSceneDeleted(@NonNull Scene scene) {
+            Log.d(TAG, "onSceneDeleted: " + scene);
+            saveNetwork(mMeshNetwork);
+        }
+    };
+
+    private MeshNetwork getNetwork() {
+        SharedPreferences sp = MeshApplication.application.getSharedPreferences("localNetwork", Context.MODE_PRIVATE);
+
+        String networkId = sp.getString("networkId", UUID.randomUUID().toString());
+        MeshNetwork network = new MeshNetwork(networkId);
+
+
+        for (NetworkKey key : stringToList(sp.getString("netKeys", ""), NetworkKey.CREATOR, new NetworkKey[] { toNordicNetKey(networkId) })) {
+            network.addNetKey(key);
+        }
+
+        for (ApplicationKey key : stringToList(sp.getString("appKeys", ""), ApplicationKey.CREATOR, new ApplicationKey[] {
+            toNordicAppKey(networkId, 0), toNordicAppKey(networkId, 1), toNordicAppKey(networkId, 2),
+        })) {
+            network.addAppKey(key);
+        }
+
+        Provisioner firstProv = null;
+        for (Provisioner prov : stringToList(sp.getString("provisioners", ""), Provisioner.CREATOR, new Provisioner[] { toNordicProv(networkId, UUID.randomUUID().toString(), PROV_ADDR_START) })) {
+            Log.d(TAG, "Loaded provisioner[0x" + Integer.toHexString(prov.getProvisionerAddress()) + "] seq: " + prov.getSequenceNumber() + "/0x" + Integer.toHexString(prov.getSequenceNumber()));
+
+            prov.incrementSequenceNumber(0x20);
+            network.addProvisioner(prov);
+            if (firstProv == null) firstProv = prov;
+        }
+
+        if (firstProv != null)
+            network.selectProvisioner(firstProv);
+
+        network.setGlobalTtl(sp.getInt("ttl", 10));
+
+        network.setIvIndex(sp.getInt("ivIndex", 0));
+        network.setIvUpdateState(sp.getInt("ivState", 0));
+        Log.d(TAG, "Loaded network ivIndex: " + network.getIvIndex() + "/0x" + Integer.toBinaryString(network.getIvIndex()));
+
+        for (ProvisionedMeshNode node : stringToList(sp.getString("devices", ""), ProvisionedMeshNode.CREATOR, null)) {
+            network.addNode(node);
+        }
+
+        for (Group node : stringToList(sp.getString("groups", ""), Group.CREATOR, new Group[] {
+            toNordicGroup(networkId, GROUP_ADDR_START, "Group0"),
+            toNordicGroup(networkId, GROUP_ADDR_START + 1, "Group1"),
+            toNordicGroup(networkId, GROUP_ADDR_START + 2, "Group2"),
+        })) {
+            network.addGroup(node);
+        }
+
+        Log.i(TAG, "local network loaded.");
+        return network;
+    }
+
+    private long lastSaveUtc = 0, lastTryUtc = 0;
+    private Handler handler = new Handler(Looper.getMainLooper());
+    private void saveNetwork(MeshNetwork network) {
+        long utc = System.currentTimeMillis();
+        lastTryUtc = utc;
+
+        handler.postDelayed(() -> {
+            if (lastTryUtc != utc && System.currentTimeMillis() - lastSaveUtc < 3000)
+                return;
+
+            lastSaveUtc = System.currentTimeMillis();
+
+            SharedPreferences sp = MeshApplication.application.getSharedPreferences("localNetwork", Context.MODE_PRIVATE);
+            SharedPreferences.Editor ed = sp.edit();
+            ed.putString("networkId", network.getId());
+
+            ed.putString("netKeys", arrayToString(network.getNetKeys()));
+            ed.putString("appKeys", arrayToString(network.getAppKeys()));
+            ed.putString("provisioners", arrayToString(network.getProvisioners()));
+            ed.putString("devices", arrayToString(network.getNodes()));
+            ed.putString("groups", arrayToString(network.getGroups()));
+            // ed.putString("scenes", arrayToString(network.getScenes()));
+
+            ed.putInt("ttl", network.getGlobalTtl());
+
+            for (Provisioner prov : network.getProvisioners()) {
+                Log.d(TAG, "Saved provisioner[0x" + Integer.toHexString(prov.getProvisionerAddress()) + "] seq: " + prov.getSequenceNumber() + "/0x" + Integer.toHexString(prov.getSequenceNumber()));
+            }
+
+            Log.d(TAG, "Saved network ivIndex: " + network.getIvIndex() + "/0x" + Integer.toBinaryString(network.getIvIndex()));
+            ed.putInt("ivIndex", network.getIvIndex());
+            ed.putInt("ivState", network.getIvUpdateState());
+
+            ed.apply();
+
+            Log.i(TAG, "local network saved.");
+        }, 1000);
+    }
+
+    private String arrayToString(List<? extends Parcelable> items) {
+        StringBuilder sb = new StringBuilder();
+
+        boolean first = true;
+        for (Parcelable item : items) {
+            if (!first) {
+                sb.append(",");
+            }
+
+            first = false;
+
+            sb.append(Base64.encodeToString(marshall(item), Base64.NO_WRAP));
+        }
+
+        return sb.toString();
+    }
+
+    private <T extends Parcelable> List<T> stringToList(String str, @NonNull Parcelable.Creator<T> creator, T[] placement) {
+        String[] items = str.length() > 0 ? str.split(",") : new String[0];
+        List<T> list = new ArrayList<>(items.length);
+
+        if (items.length == 0 && str.length() > 0)
+            items = new String[] { str };
+
+        for (String item : items) {
+            if (item.length() == 0)
+                continue;
+
+            list.add(unmarshall(Base64.decode(item, Base64.NO_WRAP), creator));
+        }
+
+        Log.d(TAG, "Restored[" + items.length + "] " + creator.getClass());
+
+        if (list.size() == 0 && placement != null) {
+            list.addAll(Arrays.asList(placement));
+        }
+
+        return list;
+    }
+
+    private Random rand = new Random();
+    private static final int
+        GROUP_ADDR_START = 0xc000,
+        GROUP_ADDR_END = 0xcc9a,
+        DEV_ADDR_START = 0x0001,
+        DEV_ADDR_END = 0x7000,
+        PROV_ADDR_START = 0x7000,
+        PROV_ADDR_END = 0x7FFF,
+        SCENE_ADDR_START = 0x0001,
+        SCENE_ADDR_END = 0x3333,
+
+    NET_KEY_LEN = 16,
+        APP_KEY_LEN = 16
+            ;
+    private byte[] randomBytes(int len) {
+        byte[] bytes = new byte[len];
+        rand.nextBytes(bytes);
+        return bytes;
+    }
+
+    public Provisioner toNordicProv(String networkId, String devId, int addr) {
+        Provisioner provisioner = new Provisioner(devId,
+            new ArrayList<AllocatedUnicastRange>() {{ add(new AllocatedUnicastRange(DEV_ADDR_START, DEV_ADDR_END)); }},
+            new ArrayList<AllocatedGroupRange>() {{ add(new AllocatedGroupRange(GROUP_ADDR_START, GROUP_ADDR_END)); }},
+            new ArrayList<AllocatedSceneRange>() {{ add(new AllocatedSceneRange(SCENE_ADDR_START, SCENE_ADDR_END)); }},
+            networkId);
+
+        provisioner.assignProvisionerAddress(addr);
+        provisioner.setSequenceNumber(0);
+        // provisioner.setGlobalTtl(prov.tt);
+        return provisioner;
+    }
+
+    public Group toNordicGroup(String networkId, int addr, String name) {
+        Group g = new Group(addr, networkId);
+
+        g.setName(name);
+
+        return g;
+    }
+
+    public ApplicationKey toNordicAppKey(String networkId, int keyIndex) {
+        int netKeyIdx = 0;
+        ApplicationKey ak = new ApplicationKey(keyIndex, randomBytes(APP_KEY_LEN));
+        ak.setBoundNetKeyIndex(0);
+        ak.setMeshUuid(networkId);
+        ak.setOldKey(randomBytes(APP_KEY_LEN));
+        ak.setName("AppKey" + keyIndex);
+        ak.setId((netKeyIdx << 16) + keyIndex);
+        return ak;
+    }
+
+    public NetworkKey toNordicNetKey(String networkId) {
+        int keyIndex = 0;
+        NetworkKey ak = new NetworkKey(keyIndex, randomBytes(NET_KEY_LEN));
+        ak.setMeshUuid(networkId);
+        ak.setOldKey(randomBytes(NET_KEY_LEN));
+        ak.setName("Primary");
+        ak.setId(keyIndex << 16);
+        // ak.setTimestamp(netKey.timestamp);
+        ak.setPhase(NetworkKey.PHASE_0);
+        // ak.setMinSecurity(netKey.);
+        return ak;
+    }
+
+    public static byte[] marshall(Parcelable parceable) {
+        Parcel parcel = Parcel.obtain();
+        parceable.writeToParcel(parcel, 0);
+        byte[] bytes = parcel.marshall();
+        parcel.recycle(); // not sure if needed or a good idea
+        return bytes;
+    }
+
+    public static <T extends Parcelable> T unmarshall(byte[] bytes, Parcelable.Creator<T> creator) {
+        Parcel parcel = unmarshall(bytes);
+        return creator.createFromParcel(parcel);
+    }
+
+    public static Parcel unmarshall(byte[] bytes) {
+        Parcel parcel = Parcel.obtain();
+        parcel.unmarshall(bytes, 0, bytes.length);
+        parcel.setDataPosition(0); // this is extremely important!
+        return parcel;
+    }
+
+
     /**
      * We should only update the selected node, since sending messages to group address will notify with nodes that is not on the UI
      */
@@ -1036,10 +1413,16 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
                 if (serviceData != null) {
                     if (mMeshManagerApi.isAdvertisedWithNodeIdentity(serviceData)) {
                         final ProvisionedMeshNode node = mProvisionedMeshNode;
-                        if (mMeshManagerApi.nodeIdentityMatches(node, serviceData)) {
-                            stopScan();
-                            mConnectionState.postValue("Provisioned node found");
-                            onProvisionedDeviceFound(node, new ExtendedBluetoothDevice(result));
+
+                        try {
+                            if (mMeshManagerApi.nodeIdentityMatches(node, serviceData)) {
+                                stopScan();
+                                mConnectionState.postValue("Provisioned node found");
+                                onProvisionedDeviceFound(node, new ExtendedBluetoothDevice(result));
+                            }
+                        } catch (Throwable e) {
+                            Log.e(TAG, "Should fix: ", e);
+                            throw e;
                         }
                     }
                 }

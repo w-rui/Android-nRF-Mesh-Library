@@ -9,7 +9,7 @@ public abstract class MeshMessage {
 
     private final int mAszmic = 0;
     protected Message mMessage;
-    byte[] mParameters;
+    protected byte[] mParameters;
 
     /**
      * Returns the application key flag used for this message.
@@ -32,12 +32,16 @@ public abstract class MeshMessage {
      */
     abstract int getOpCode();
 
+    public int opCode() { return getOpCode(); }
+
     /**
      * Returns the parameters of this message.
      *
      * @return parameters
      */
     abstract byte[] getParameters();
+
+    public byte[] parameters() { return getParameters(); }
 
     /**
      * Returns the size of message integrity check used for this message.

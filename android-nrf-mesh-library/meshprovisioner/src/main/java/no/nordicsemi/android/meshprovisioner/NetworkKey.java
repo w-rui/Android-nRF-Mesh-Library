@@ -75,6 +75,8 @@ public final class NetworkKey extends MeshKey {
         minSecurity = in.readByte() != 0;
         oldKey = in.createByteArray();
         timestamp = in.readLong();
+
+        identityKey = SecureUtils.calculateIdentityKey(key);
     }
 
     public static final Creator<NetworkKey> CREATOR = new Creator<NetworkKey>() {

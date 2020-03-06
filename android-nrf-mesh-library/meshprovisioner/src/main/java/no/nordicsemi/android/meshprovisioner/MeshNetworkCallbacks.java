@@ -1,12 +1,11 @@
 package no.nordicsemi.android.meshprovisioner;
 
-import androidx.annotation.NonNull;
-
 import java.util.List;
 
+import androidx.annotation.NonNull;
 import no.nordicsemi.android.meshprovisioner.transport.ProvisionedMeshNode;
 
-interface MeshNetworkCallbacks {
+public interface MeshNetworkCallbacks {
 
     void onMeshNetworkUpdated();
 

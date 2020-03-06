@@ -42,6 +42,6 @@ class BleMeshManagerModule {
     @Provides
     @Singleton
     MeshManagerApi provideMeshManagerApi(final Context context) {
-        return new MeshManagerApi(context);
+        return new MeshManagerApi(context, null);
     }
 }

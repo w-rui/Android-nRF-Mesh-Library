@@ -25,6 +25,7 @@ package no.nordicsemi.android.nrfmeshprovisioner;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -84,6 +85,8 @@ public class ProvisioningActivity extends AppCompatActivity implements Injectabl
         DialogFragmentUnicastAddress.DialogFragmentUnicastAddressListener,
         DialogFragmentProvisioningFailedError.DialogFragmentProvisioningFailedErrorListener,
         DialogFragmentConfigurationComplete.ConfigurationCompleteListener {
+
+    private static final String TAG = ProvisioningActivity.class.getSimpleName();
 
     private static final String DIALOG_FRAGMENT_PROVISIONING_FAILED = "DIALOG_FRAGMENT_PROVISIONING_FAILED";
     private static final String DIALOG_FRAGMENT_AUTH_INPUT_TAG = "DIALOG_FRAGMENT_AUTH_INPUT_TAG";
@@ -246,9 +249,11 @@ public class ProvisioningActivity extends AppCompatActivity implements Injectabl
         });
 
         action_provision.setOnClickListener(v -> {
+            // add here.
             final UnprovisionedMeshNode node = mViewModel.getUnprovisionedMeshNode().getValue();
             if (node == null) {
                 device.setName(mViewModel.getNetworkLiveData().getNodeName());
+                Log.d(TAG, "identifyNode");
                 mViewModel.getNrfMeshRepository().identifyNode(device);
                 return;
             }
@@ -304,6 +309,7 @@ public class ProvisioningActivity extends AppCompatActivity implements Injectabl
 
     @Override
     public void onPinInputComplete(final String pin) {
+        Log.d(TAG, "onPinInputComplete, setProvisioningAuthentication: " + pin);
         mViewModel.getMeshManagerApi().setProvisioningAuthentication(pin);
     }
 
@@ -549,6 +555,7 @@ public class ProvisioningActivity extends AppCompatActivity implements Injectabl
                 node.setNodeName(mViewModel.getNetworkLiveData().getNodeName());
                 setupProvisionerStateObservers(provisioningStatusContainer);
                 mProvisioningProgressBar.setVisibility(View.VISIBLE);
+                Log.d(TAG, "startProvisioning");
                 mViewModel.getMeshManagerApi().startProvisioning(node);
             } catch (IllegalArgumentException ex) {
                 mViewModel.displaySnackBar(this, mCoordinatorLayout, ex.getMessage(), Snackbar.LENGTH_LONG);
@@ -564,6 +571,7 @@ public class ProvisioningActivity extends AppCompatActivity implements Injectabl
                 node.setNodeName(mViewModel.getNetworkLiveData().getNodeName());
                 setupProvisionerStateObservers(provisioningStatusContainer);
                 mProvisioningProgressBar.setVisibility(View.VISIBLE);
+                Log.d(TAG, "startProvisioningWithStaticOOB");
                 mViewModel.getMeshManagerApi().startProvisioningWithStaticOOB(node);
             } catch (IllegalArgumentException ex) {
                 mViewModel.displaySnackBar(this, mCoordinatorLayout, ex.getMessage(), Snackbar.LENGTH_LONG);
@@ -579,6 +587,7 @@ public class ProvisioningActivity extends AppCompatActivity implements Injectabl
                 node.setNodeName(mViewModel.getNetworkLiveData().getNodeName());
                 setupProvisionerStateObservers(provisioningStatusContainer);
                 mProvisioningProgressBar.setVisibility(View.VISIBLE);
+                Log.d(TAG, "startProvisioningWithOutputOOB");
                 mViewModel.getMeshManagerApi().startProvisioningWithOutputOOB(node, action);
             } catch (IllegalArgumentException ex) {
                 mViewModel.displaySnackBar(this, mCoordinatorLayout, ex.getMessage(), Snackbar.LENGTH_LONG);
@@ -594,6 +603,7 @@ public class ProvisioningActivity extends AppCompatActivity implements Injectabl
                 node.setNodeName(mViewModel.getNetworkLiveData().getNodeName());
                 setupProvisionerStateObservers(provisioningStatusContainer);
                 mProvisioningProgressBar.setVisibility(View.VISIBLE);
+                Log.d(TAG, "startProvisioningWithInputOOB");
                 mViewModel.getMeshManagerApi().startProvisioningWithInputOOB(node, action);
             } catch (IllegalArgumentException ex) {
                 mViewModel.displaySnackBar(this, mCoordinatorLayout, ex.getMessage(), Snackbar.LENGTH_LONG);

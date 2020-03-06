@@ -280,7 +280,7 @@ public class Provisioner implements Parcelable {
      */
     public boolean assignProvisionerAddress(@Nullable final Integer address) throws IllegalArgumentException {
         if (address != null && !MeshAddress.isValidUnicastAddress(address)) {
-            throw new IllegalArgumentException("Unicast address must range between 0x0001 to 0x7FFF.");
+            throw new IllegalArgumentException("Unicast address must range between 0x0001 to 0x7FFF: 0x" + Integer.toHexString(address));
         }
         if (isAddressWithinAllocatedRange(address)) {
             this.provisionerAddress = address;
@@ -321,6 +321,11 @@ public class Provisioner implements Parcelable {
     @RestrictTo(RestrictTo.Scope.LIBRARY)
     public void setLastSelected(final boolean lastSelected) {
         this.lastSelected = lastSelected;
+    }
+
+    public int incrementSequenceNumber(int inc) {
+        sequenceNumber = sequenceNumber + inc;
+        return sequenceNumber;
     }
 
     public int incrementSequenceNumber() {

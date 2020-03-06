@@ -336,6 +336,15 @@ public final class MeshNetwork extends BaseMeshNetwork {
         return null;
     }
 
+    public void addNode(ProvisionedMeshNode node) {
+        for (ProvisionedMeshNode n : nodes) {
+            if (n == node || n.getUnicastAddress() == node.getUnicastAddress())
+                return;
+        }
+
+        nodes.add(node);
+    }
+
     private boolean isGroupAddressInUse(final int address) {
         for (Group group : groups) {
             //if the address is not in use, return it as the next available address to create a group

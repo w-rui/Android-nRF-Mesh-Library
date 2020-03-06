@@ -574,4 +574,10 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
         }
         return false;
     }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "{ addr: 0x" + Integer.toHexString(unicastAddress) + "/" + unicastAddress + ", name: " + getNodeName() + ", uuid: " + getUuid() + " }";
+    }
 }

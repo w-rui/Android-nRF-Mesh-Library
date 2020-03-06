@@ -3,22 +3,22 @@ package no.nordicsemi.android.meshprovisioner.transport;
 import androidx.annotation.NonNull;
 import no.nordicsemi.android.meshprovisioner.ApplicationKey;
 
-abstract class GenericMessage extends MeshMessage {
+public abstract class GenericMessage extends MeshMessage {
 
     public static final int GENERIC_TRANSITION_STEP_0 = 0;
     public static final int GENERIC_TRANSITION_STEP_1 = 1;
     public static final int GENERIC_TRANSITION_STEP_2 = 2;
     public static final int GENERIC_TRANSITION_STEP_3 = 3;
 
-    final ApplicationKey mAppKey;
-    byte mAid;
+    protected final ApplicationKey mAppKey;
+    protected byte mAid;
 
     /**
      * Constructs a generic message
      *
      * @param appKey application key
      */
-    GenericMessage(@NonNull final ApplicationKey appKey) {
+    public GenericMessage(@NonNull final ApplicationKey appKey) {
         if (appKey.getKey().length != 16)
             throw new IllegalArgumentException("Application key must be 16 bytes");
         this.mAppKey = appKey;

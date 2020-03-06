@@ -22,7 +22,6 @@
 
 package no.nordicsemi.android.nrfmeshprovisioner.ble;
 
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -114,6 +113,7 @@ public class BleMeshManager extends BleManager<BleMeshManagerCallbacks> {
         public boolean isRequiredServiceSupported(final BluetoothGatt gatt) {
             boolean writeRequest;
 
+            boolean got = false;
             BluetoothGattService meshService = gatt.getService(MESH_PROXY_UUID);
             if (meshService != null) {
                 isProvisioningComplete = true;
@@ -125,23 +125,24 @@ public class BleMeshManager extends BleManager<BleMeshManagerCallbacks> {
                     final int rxProperties = mMeshProxyDataInCharacteristic.getProperties();
                     writeRequest = (rxProperties & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) > 0;
                 }
-                return mMeshProxyDataInCharacteristic != null && mMeshProxyDataOutCharacteristic != null && writeRequest;
-            } else {
-                meshService = gatt.getService(MESH_PROVISIONING_UUID);
-                if (meshService != null) {
-                    isProvisioningComplete = false;
-                    mMeshProvisioningDataInCharacteristic = meshService.getCharacteristic(MESH_PROVISIONING_DATA_IN);
-                    mMeshProvisioningDataOutCharacteristic = meshService.getCharacteristic(MESH_PROVISIONING_DATA_OUT);
-
-                    writeRequest = false;
-                    if (mMeshProvisioningDataInCharacteristic != null) {
-                        final int rxProperties = mMeshProvisioningDataInCharacteristic.getProperties();
-                        writeRequest = (rxProperties & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) > 0;
-                    }
-                    return mMeshProvisioningDataInCharacteristic != null && mMeshProvisioningDataOutCharacteristic != null && writeRequest;
-                }
+                got = mMeshProxyDataInCharacteristic != null && mMeshProxyDataOutCharacteristic != null && writeRequest;
             }
-            return false;
+
+            meshService = gatt.getService(MESH_PROVISIONING_UUID);
+            if (meshService != null) {
+                isProvisioningComplete = false;
+                mMeshProvisioningDataInCharacteristic = meshService.getCharacteristic(MESH_PROVISIONING_DATA_IN);
+                mMeshProvisioningDataOutCharacteristic = meshService.getCharacteristic(MESH_PROVISIONING_DATA_OUT);
+
+                writeRequest = false;
+                if (mMeshProvisioningDataInCharacteristic != null) {
+                    final int rxProperties = mMeshProvisioningDataInCharacteristic.getProperties();
+                    writeRequest = (rxProperties & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) > 0;
+                }
+                got = got || mMeshProvisioningDataInCharacteristic != null && mMeshProvisioningDataOutCharacteristic != null && writeRequest;
+            }
+
+            return got;
         }
 
         @Override
@@ -176,6 +177,7 @@ public class BleMeshManager extends BleManager<BleMeshManagerCallbacks> {
         protected void onMtuChanged(final int mtu) {
             super.onMtuChanged(mtu);
             mtuSize = mtu - 3;
+            Log.d(TAG, "mtusize: " + mtuSize);
         }
 
         @Override
@@ -211,7 +213,9 @@ public class BleMeshManager extends BleManager<BleMeshManagerCallbacks> {
      *
      * @param pdu mesh pdu
      */
-    public void sendPdu(final byte[] pdu) {
+    public void sendPdu(final byte[] pdu, boolean isProvisioning) {
+        Log.v(TAG, "sendPdu " + (isProvisioning ? "provisioning" : "proxy") + " data(" + pdu.length + "): " + MeshParserUtils.bytesToHex(pdu, true));
+
         final int chunks = (pdu.length + (mtuSize - 1)) / mtuSize;
         int srcOffset = 0;
         if (chunks > 1) {
@@ -220,10 +224,10 @@ public class BleMeshManager extends BleManager<BleMeshManagerCallbacks> {
                 final byte[] segmentedBuffer = new byte[length];
                 System.arraycopy(pdu, srcOffset, segmentedBuffer, 0, length);
                 srcOffset += length;
-                send(segmentedBuffer);
+                send(segmentedBuffer, isProvisioning);
             }
         } else {
-            send(pdu);
+            send(pdu, isProvisioning);
         }
     }
 
@@ -243,24 +247,15 @@ public class BleMeshManager extends BleManager<BleMeshManagerCallbacks> {
         return mtuSize;
     }
 
-    private void send(final byte[] data) {
-        Log.v(TAG, "Sending data : " + MeshParserUtils.bytesToHex(data, true));
-        if (isProvisioningComplete) {
-            // Are we connected?
-            if (mMeshProxyDataInCharacteristic == null)
-                return;
-            final BluetoothGattCharacteristic characteristic = mMeshProxyDataInCharacteristic;
-            characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-            writeCharacteristic(characteristic, data);
-
-        } else {
-            // Are we connected?
-            if (mMeshProvisioningDataInCharacteristic == null)
-                return;
-            final BluetoothGattCharacteristic characteristic = mMeshProvisioningDataInCharacteristic;
-            characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-            writeCharacteristic(characteristic, data);
+    private void send(final byte[] data, boolean isProvisioning) {
+        final BluetoothGattCharacteristic characteristic = isProvisioning ? mMeshProvisioningDataInCharacteristic : mMeshProxyDataInCharacteristic;
+        if (characteristic == null) {
+            Log.w(TAG, "Sending ignored because not exist char, " + (isProvisioning ? "provisioning" : "proxy") + " data : " + MeshParserUtils.bytesToHex(data, true));
+            return;
         }
+
+        Log.v(TAG, "Sending " + (isProvisioning ? "provisioning" : "proxy") + " data(" + data.length + "): " + MeshParserUtils.bytesToHex(data, true) + ", char: " + characteristic.getUuid().toString());
+        writeCharacteristic(characteristic, data);
     }
 
     private boolean refreshDeviceCache(final BluetoothGatt gatt) {
