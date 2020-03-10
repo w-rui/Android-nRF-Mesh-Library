@@ -334,7 +334,7 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
         initIsConnectedLiveData(connectToNetwork);
         mConnectionState.postValue("Connecting....");
         //Added a 1 second delay for connection, mostly to wait for a disconnection to complete before connecting.
-        mHandler.postDelayed(() -> mBleMeshManager.connect(bluetoothDevice), 1000);
+        mHandler.postDelayed(() -> mBleMeshManager.connect(bluetoothDevice).retry(3, 200).enqueue(), 1000);
     }
 
     /**
@@ -345,7 +345,7 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
     private void connectToProxy(final ExtendedBluetoothDevice device) {
         initIsConnectedLiveData(true);
         mConnectionState.postValue("Connecting....");
-        mBleMeshManager.connect(device.getDevice());
+        mBleMeshManager.connect(device.getDevice()).retry(3, 200).enqueue();
     }
 
     private void initIsConnectedLiveData(final boolean connectToNetwork) {
@@ -362,7 +362,7 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
     void disconnect() {
         clearProvisioningLiveData();
         mIsProvisioningComplete = false;
-        mBleMeshManager.disconnect();
+        mBleMeshManager.disconnect().enqueue();
     }
 
     void clearProvisioningLiveData() {
@@ -496,19 +496,19 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
     }
 
     @Override
-    public void onDeviceConnecting(final BluetoothDevice device) {
+    public void onDeviceConnecting(@NonNull final BluetoothDevice device) {
         mConnectionState.postValue("Connecting....");
     }
 
     @Override
-    public void onDeviceConnected(final BluetoothDevice device) {
+    public void onDeviceConnected(@NonNull final BluetoothDevice device) {
         mIsConnected.postValue(true);
         mConnectionState.postValue("Discovering services....");
         mIsConnectedToProxy.postValue(true);
     }
 
     @Override
-    public void onDeviceDisconnecting(final BluetoothDevice device) {
+    public void onDeviceDisconnecting(@NonNull final BluetoothDevice device) {
         Log.v(TAG, "Disconnecting...");
         if (mIsReconnectingFlag) {
             mConnectionState.postValue("Reconnecting...");
@@ -519,7 +519,7 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
 
     @SuppressWarnings("ConstantConditions")
     @Override
-    public void onDeviceDisconnected(final BluetoothDevice device) {
+    public void onDeviceDisconnected(@NonNull final BluetoothDevice device) {
         Log.v(TAG, "Disconnected");
         mConnectionState.postValue("");
         if (mIsReconnectingFlag) {
@@ -542,18 +542,18 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
     }
 
     @Override
-    public void onLinklossOccur(final BluetoothDevice device) {
+    public void onLinkLossOccurred(@NonNull final BluetoothDevice device) {
         Log.v(TAG, "Link loss occurred");
         mIsConnected.postValue(false);
     }
 
     @Override
-    public void onServicesDiscovered(final BluetoothDevice device, final boolean optionalServicesFound) {
+    public void onServicesDiscovered(@NonNull final BluetoothDevice device, final boolean optionalServicesFound) {
         mConnectionState.postValue("Initializing...");
     }
 
     @Override
-    public void onDeviceReady(final BluetoothDevice device) {
+    public void onDeviceReady(@NonNull final BluetoothDevice device) {
         mOnDeviceReady.postValue(null);
 
         if (mBleMeshManager.isProvisioningComplete()) {
@@ -578,33 +578,28 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
     }
 
     @Override
-    public boolean shouldEnableBatteryLevelNotifications(final BluetoothDevice device) {
-        return false;
+    public void onBondingRequired(@NonNull final BluetoothDevice device) {
+        // Empty.
     }
 
     @Override
-    public void onBatteryValueReceived(final BluetoothDevice device, final int value) {
-
+    public void onBonded(@NonNull final BluetoothDevice device) {
+        // Empty.
     }
 
     @Override
-    public void onBondingRequired(final BluetoothDevice device) {
-
+    public void onBondingFailed(@NonNull final BluetoothDevice device) {
+        // Empty.
     }
 
     @Override
-    public void onBonded(final BluetoothDevice device) {
-
-    }
-
-    @Override
-    public void onError(final BluetoothDevice device, final String message, final int errorCode) {
-        Log.e(TAG, "Error: " + message + " Error Code: " + errorCode + " Device: " + device.getAddress());
+    public void onError(final BluetoothDevice device, @NonNull final String message, final int errorCode) {
+        Log.e(TAG, message + " (code: " + errorCode + "), device: " + device.getAddress());
         mConnectionState.postValue(message);
     }
 
     @Override
-    public void onDeviceNotSupported(final BluetoothDevice device) {
+    public void onDeviceNotSupported(@NonNull final BluetoothDevice device) {
 
     }
 
@@ -662,12 +657,12 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
 
     @Override
     public int getMtu() {
-        return mBleMeshManager.getMtuSize();
+        return mBleMeshManager.getMaximumPacketSize();
     }
 
     @Override
     public int getProvMtu(UnprovisionedMeshNode unproved) {
-        return mBleMeshManager.getMtuSize();
+        return mBleMeshManager.getMaximumPacketSize();
     }
 
     @Override
@@ -685,7 +680,6 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
                 break;
         }
         mProvisioningStateLiveData.onMeshNodeStateUpdated(ProvisionerStates.fromStatusCode(state.getState()));
-
     }
 
     @Override
@@ -697,7 +691,6 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
             mIsProvisioningComplete = false;
         }
         mProvisioningStateLiveData.onMeshNodeStateUpdated(ProvisionerStates.fromStatusCode(state.getState()));
-
     }
 
     @Override
@@ -710,15 +703,13 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
             onProvisioningCompleted(meshNode);
         }
         mProvisioningStateLiveData.onMeshNodeStateUpdated(ProvisionerStates.fromStatusCode(state.getState()));
-
     }
 
     private void onProvisioningCompleted(final ProvisionedMeshNode node) {
         mIsProvisioningComplete = true;
         mProvisionedMeshNode = node;
         mIsReconnecting.postValue(true);
-        mBleMeshManager.disconnect();
-        mBleMeshManager.refreshDeviceCache();
+        mBleMeshManager.disconnect().enqueue();
         loadNodes();
         mHandler.post(() -> mConnectionState.postValue("Scanning for provisioned node"));
         mHandler.postDelayed(mReconnectRunnable, 1000); //Added a slight delay to disconnect and refresh the cache
@@ -913,7 +904,7 @@ public class NrfMeshRepository implements MeshProvisioningStatusCallbacks, MeshS
                 }
 
             } else if (meshMessage instanceof ConfigNodeResetStatus) {
-
+                mBleMeshManager.setClearCacheRequired();
                 final ConfigNodeResetStatus status = (ConfigNodeResetStatus) meshMessage;
                 mExtendedMeshNode.postValue(null);
                 loadNodes();

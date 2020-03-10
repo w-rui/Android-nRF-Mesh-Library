@@ -29,8 +29,8 @@ android {
     defaultConfig {
         minSdkVersion 18
         targetSdkVersion 29
-        versionCode 53
-        versionName "2.0.5"
+        versionCode 60
+        versionName "2.1.4"
 
         javaCompileOptions {
             annotationProcessorOptions {
@@ -64,5 +64,4 @@ dependencies {
     // Spongycastle - Android implementation of Bouncy Castle
     implementation 'com.madgag.spongycastle:core:1.58.0.0'
     implementation 'com.madgag.spongycastle:prov:1.56.0.0'
-
 }

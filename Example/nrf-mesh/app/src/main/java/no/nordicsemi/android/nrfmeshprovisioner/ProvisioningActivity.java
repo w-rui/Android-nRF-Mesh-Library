@@ -126,7 +126,7 @@ public class ProvisioningActivity extends AppCompatActivity implements Injectabl
         getSupportActionBar().setSubtitle(deviceAddress);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        mViewModel = ViewModelProviders.of(this, mViewModelFactory).get(ProvisioningViewModel.class);
+        mViewModel = new ViewModelProvider(this, mViewModelFactory).get(ProvisioningViewModel.class);
         if (savedInstanceState == null)
             mViewModel.connect(this, device, false);
 

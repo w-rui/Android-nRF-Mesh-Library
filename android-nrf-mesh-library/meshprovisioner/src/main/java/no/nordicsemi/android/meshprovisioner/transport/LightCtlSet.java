@@ -1,13 +1,13 @@
 package no.nordicsemi.android.meshprovisioner.transport;
 
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.util.Log;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import no.nordicsemi.android.meshprovisioner.ApplicationKey;
 import no.nordicsemi.android.meshprovisioner.opcodes.ApplicationMessageOpCodes;
 import no.nordicsemi.android.meshprovisioner.utils.SecureUtils;
@@ -79,7 +79,7 @@ public class LightCtlSet extends GenericMessage {
             throw new IllegalArgumentException("Light lightness value must be between 0 to 0xFFFF");
         if (lightTemperature < 0x0320 || lightTemperature > 0x4E20)
             throw new IllegalArgumentException("Light temperature value must be between 0x0320 to 0x4E20");
-        if (lightDeltaUv != 0 && lightDeltaUv < 0x8000 || lightDeltaUv > 0x7fff)
+        if (lightDeltaUv < -32768 || lightDeltaUv > 0x32767)
             throw new IllegalArgumentException("Light delta uv value must be between 0x8000 to 0x7FFF or 0");
         this.mLightness = lightLightness;
         this.mTemperature = lightTemperature;

@@ -279,6 +279,8 @@ public class MeshManagerApi implements MeshMngrApi {
             }
         } catch (ExtendedInvalidCipherTextException ex) {
             //TODO handle decryption failure
+        } catch (IllegalArgumentException ex) {
+            Log.e(TAG, "Parsing notification failed: " + MeshParserUtils.bytesToHex(unsegmentedPdu, true) + " - " + ex.getMessage());
         }
     }
 
@@ -605,8 +607,8 @@ public class MeshManagerApi implements MeshMngrApi {
 
     @Override
     public boolean isAdvertisedWithNodeIdentity(@Nullable final byte[] serviceData) {
-        return serviceData != null &&
-                serviceData[ADVERTISED_HASH_OFFSET - 1] == ADVERTISEMENT_TYPE_NODE_IDENTITY;
+        return serviceData != null && serviceData.length == 17
+                && serviceData[ADVERTISED_HASH_OFFSET - 1] == ADVERTISEMENT_TYPE_NODE_IDENTITY;
     }
 
     /**
@@ -649,7 +651,8 @@ public class MeshManagerApi implements MeshMngrApi {
 
     @Override
     public boolean isAdvertisingWithNetworkIdentity(@Nullable final byte[] serviceData) {
-        return serviceData != null && serviceData[ADVERTISED_NETWORK_ID_OFFSET - 1] == ADVERTISEMENT_TYPE_NETWORK_ID;
+        return serviceData != null && serviceData.length == 9
+                && serviceData[ADVERTISED_NETWORK_ID_OFFSET - 1] == ADVERTISEMENT_TYPE_NETWORK_ID;
     }
 
     /**
@@ -852,29 +855,14 @@ public class MeshManagerApi implements MeshMngrApi {
                 for (int i = 0; i < mMeshNetwork.nodes.size(); i++) {
                     if (meshNode.getUnicastAddress() == mMeshNetwork.nodes.get(i).getUnicastAddress()) {
                         mMeshNetwork.nodes.set(i, meshNode);
-                        //mMeshNetworkDb.updateNode(mProvisionedNodeDao, meshNode);
                         break;
                     }
                 }
             }
 
             if (forwardCb != null) forwardCb.onMeshNetworkUpdated();
-            
-            /*if (meshNode != null) {
-                for (int i = 0; i < mMeshNetwork.nodes.size(); i++) {
-                    if (meshNode.getUnicastAddress() == mMeshNetwork.nodes.get(i).getUnicastAddress()) {
-                        mMeshNetwork.nodes.set(i, meshNode);
-                        mMeshNetworkDb.updateNode(mProvisionedNodeDao, meshNode);
-                        break;
-                    }
-                }
-            }
-            mMeshNetworkDb.updateProvisioner(mProvisionerDao, mMeshNetwork.getSelectedProvisioner());
-            mMeshNetworkDb.updateNode(mProvisionedNodeDao, mMeshNetwork.getNode(mMeshNetwork.getSelectedProvisioner().getProvisionerUuid()));
-            mMeshNetwork.loadSequenceNumbers();
-            mMeshNetwork.setTimestamp(MeshParserUtils.getInternationalAtomicTime(System.currentTimeMillis()));
-            mMeshNetworkDb.updateGroups(mGroupsDao, mMeshNetwork.groups);
-            mMeshNetworkDb.updateNetwork(mMeshNetworkDao, mMeshNetwork);*/
+
+            mMeshNetwork.setTimestamp(System.currentTimeMillis());
             mMeshManagerCallbacks.onNetworkUpdated(mMeshNetwork);
         }
     };
@@ -888,7 +876,7 @@ public class MeshManagerApi implements MeshMngrApi {
             mMeshNetwork.unicastAddress = mMeshNetwork.nextAvailableUnicastAddress(meshNode.getNumberOfElements(), mMeshNetwork.getSelectedProvisioner());
             //Set the mesh network uuid to the node so we can identify nodes belonging to a network
             meshNode.setMeshUuid(mMeshNetwork.getMeshUUID());
-            
+
             if (forwardCb != null) forwardCb.onNodeAdded(meshNode);
             if (forwardCb != null) forwardCb.onProvisionerUpdated(mMeshNetwork.getSelectedProvisioner());
 

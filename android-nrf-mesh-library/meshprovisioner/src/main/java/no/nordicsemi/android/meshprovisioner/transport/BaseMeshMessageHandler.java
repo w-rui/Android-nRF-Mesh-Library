@@ -126,6 +126,8 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
                                 return;
                             }
                             node.setSequenceNumber(sequenceNo);
+                        } else {
+                            return;
                         }
                     } else {
                         return;
@@ -261,7 +263,7 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
     private void createConfigMeshMessage(final int src, final int dst, @NonNull final ConfigMessage configurationMessage) {
         final ProvisionedMeshNode node = mInternalTransportCallbacks.getNode(dst);
         if (node == null) {
-            Log.d(TAG, "createConfigMeshMessage ignored because node not exist, 0x" + Integer.toHexString(dst) + ": " + configurationMessage);
+            Log.w(TAG, "createConfigMeshMessage ignored because node not exist, 0x" + Integer.toHexString(dst) + ": " + configurationMessage);
             return;
         }
 

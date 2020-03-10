@@ -41,7 +41,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -55,13 +54,13 @@ import no.nordicsemi.android.nrfmeshprovisioner.adapter.ExtendedBluetoothDevice;
 import no.nordicsemi.android.nrfmeshprovisioner.ble.adapter.DevicesAdapter;
 import no.nordicsemi.android.nrfmeshprovisioner.di.Injectable;
 import no.nordicsemi.android.nrfmeshprovisioner.utils.Utils;
-import no.nordicsemi.android.nrfmeshprovisioner.viewmodels.ScannerLiveData;
+import no.nordicsemi.android.nrfmeshprovisioner.viewmodels.ScannerStateLiveData;
 import no.nordicsemi.android.nrfmeshprovisioner.viewmodels.ScannerViewModel;
 
 public class ScannerActivity extends AppCompatActivity implements Injectable,
         DevicesAdapter.OnItemClickListener {
     private static final int REQUEST_ENABLE_BLUETOOTH = 1021; // random number
-    private static final int REQUEST_ACCESS_COARSE_LOCATION = 1022; // random number
+    private static final int REQUEST_ACCESS_FINE_LOCATION = 1022; // random number
 
     @Inject
     ViewModelProvider.Factory mViewModelFactory;
@@ -91,7 +90,7 @@ public class ScannerActivity extends AppCompatActivity implements Injectable,
         ButterKnife.bind(this);
 
         // Create view model containing utility methods for scanning
-        mViewModel = ViewModelProviders.of(this, mViewModelFactory).get(ScannerViewModel.class);
+        mViewModel = new ViewModelProvider(this, mViewModelFactory).get(ScannerViewModel.class);
 
         final Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle(R.string.title_scanner);
@@ -117,7 +116,7 @@ public class ScannerActivity extends AppCompatActivity implements Injectable,
         final SimpleItemAnimator itemAnimator = (SimpleItemAnimator) recyclerViewDevices.getItemAnimator();
         if (itemAnimator != null) itemAnimator.setSupportsChangeAnimations(false);
 
-        final DevicesAdapter adapter = new DevicesAdapter(this, mViewModel.getScannerRepository().getScannerState());
+        final DevicesAdapter adapter = new DevicesAdapter(this, mViewModel.getScannerRepository().getScannerResults());
         adapter.setOnItemClickListener(this);
         recyclerViewDevices.setAdapter(adapter);
 
@@ -190,8 +189,8 @@ public class ScannerActivity extends AppCompatActivity implements Injectable,
     @Override
     public void onRequestPermissionsResult(final int requestCode, @NonNull final String[] permissions, @NonNull final int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_ACCESS_COARSE_LOCATION) {
-            mViewModel.getScannerRepository().getScannerState().refresh();
+        if (requestCode == REQUEST_ACCESS_FINE_LOCATION) {
+            mViewModel.getScannerRepository().getScannerState().startScanning();
         }
     }
 
@@ -210,7 +209,7 @@ public class ScannerActivity extends AppCompatActivity implements Injectable,
     @OnClick(R.id.action_grant_location_permission)
     public void onGrantLocationPermissionClicked() {
         Utils.markLocationPermissionRequested(this);
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_ACCESS_COARSE_LOCATION);
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_ACCESS_FINE_LOCATION);
     }
 
     @OnClick(R.id.action_permission_settings)
@@ -223,7 +222,7 @@ public class ScannerActivity extends AppCompatActivity implements Injectable,
     /**
      * Start scanning for Bluetooth devices or displays a message based on the scanner state.
      */
-    private void startScan(final ScannerLiveData state) {
+    private void startScan(final ScannerStateLiveData state) {
         // First, check the Location permission. This is required on Marshmallow onwards in order to scan for Bluetooth LE devices.
         if (Utils.isLocationPermissionsGranted(this)) {
             mNoLocationPermissionView.setVisibility(View.GONE);
@@ -232,13 +231,15 @@ public class ScannerActivity extends AppCompatActivity implements Injectable,
             if (state.isBluetoothEnabled()) {
                 mNoBluetoothView.setVisibility(View.GONE);
 
-                // We are now OK to start scanning
-                if (mScanWithProxyService) {
-                    mViewModel.getScannerRepository().startScan(BleMeshManager.MESH_PROVISIONING_UUID);
-                } else {
-                    mViewModel.getScannerRepository().startScan(BleMeshManager.MESH_PROXY_UUID);
+                if (!state.isScanning()) {
+                    // We are now OK to start scanning
+                    if (mScanWithProxyService) {
+                        mViewModel.getScannerRepository().startScan(BleMeshManager.MESH_PROVISIONING_UUID);
+                    } else {
+                        mViewModel.getScannerRepository().startScan(BleMeshManager.MESH_PROXY_UUID);
+                    }
+                    mScanningView.setVisibility(View.VISIBLE);
                 }
-                mScanningView.setVisibility(View.VISIBLE);
 
                 if (state.isEmpty()) {
                     mEmptyView.setVisibility(View.VISIBLE);
