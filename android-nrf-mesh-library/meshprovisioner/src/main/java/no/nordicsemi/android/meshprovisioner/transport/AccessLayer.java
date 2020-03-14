@@ -22,15 +22,14 @@
 
 package no.nordicsemi.android.meshprovisioner.transport;
 
-import android.content.Context;
 import android.os.Handler;
-import androidx.annotation.NonNull;
-import androidx.annotation.VisibleForTesting;
 import android.util.Log;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import no.nordicsemi.android.meshprovisioner.utils.MeshParserUtils;
 
 /**
@@ -42,7 +41,6 @@ import no.nordicsemi.android.meshprovisioner.utils.MeshParserUtils;
 abstract class AccessLayer {
 
     private static final String TAG = AccessLayer.class.getSimpleName();
-    protected Context mContext;
     Handler mHandler;
     ProvisionedMeshNode mMeshNode;
 

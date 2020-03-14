@@ -22,9 +22,7 @@
 
 package no.nordicsemi.android.meshprovisioner;
 
-import android.content.Context;
 import androidx.annotation.NonNull;
-
 import no.nordicsemi.android.meshprovisioner.transport.BaseMeshMessageHandler;
 import no.nordicsemi.android.meshprovisioner.transport.NetworkLayerCallbacks;
 import no.nordicsemi.android.meshprovisioner.transport.UpperTransportLayerCallbacks;
@@ -38,16 +36,14 @@ final class MeshMessageHandler extends BaseMeshMessageHandler {
     /**
      * Constructs MeshMessageHandler
      *
-     * @param context                      Context
      * @param internalTransportCallbacks   {@link InternalTransportCallbacks} Callbacks
      * @param networkLayerCallbacks        {@link NetworkLayerCallbacks} network layer callbacks
      * @param upperTransportLayerCallbacks {@link UpperTransportLayerCallbacks} upper transport layer callbacks
      */
-    MeshMessageHandler(@NonNull final Context context,
-                       @NonNull final InternalTransportCallbacks internalTransportCallbacks,
+    MeshMessageHandler( @NonNull final InternalTransportCallbacks internalTransportCallbacks,
                        @NonNull final NetworkLayerCallbacks networkLayerCallbacks,
                        @NonNull final UpperTransportLayerCallbacks upperTransportLayerCallbacks) {
-        super(context, internalTransportCallbacks, networkLayerCallbacks, upperTransportLayerCallbacks);
+        super(internalTransportCallbacks, networkLayerCallbacks, upperTransportLayerCallbacks);
     }
 
     @Override

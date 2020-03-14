@@ -22,7 +22,6 @@
 
 package no.nordicsemi.android.meshprovisioner;
 
-import android.content.Context;
 import android.util.Log;
 
 import java.nio.ByteBuffer;
@@ -54,7 +53,6 @@ class MeshProvisioningHandler implements InternalProvisioningCallbacks {
     private static final String TAG = MeshProvisioningHandler.class.getSimpleName();
     static final int ATTENTION_TIMER = 5; //seconds
     private final InternalTransportCallbacks mInternalTransportCallbacks;
-    private final Context mContext;
     private MeshProvisioningStatusCallbacks mStatusCallbacks;
     private UnprovisionedMeshNode mUnprovisionedMeshNode;
     private byte attentionTimer = ATTENTION_TIMER;
@@ -71,12 +69,10 @@ class MeshProvisioningHandler implements InternalProvisioningCallbacks {
      * This will handle the provisioning process through each step
      * </p>
      *
-     * @param context                      context
      * @param mInternalTransportCallbacks  {@link InternalTransportCallbacks} callbacks
      * @param internalMeshManagerCallbacks {@link InternalMeshManagerCallbacks} callbacks
      */
-    MeshProvisioningHandler(final Context context, final InternalTransportCallbacks mInternalTransportCallbacks, final InternalMeshManagerCallbacks internalMeshManagerCallbacks) {
-        this.mContext = context;
+    MeshProvisioningHandler(final InternalTransportCallbacks mInternalTransportCallbacks, final InternalMeshManagerCallbacks internalMeshManagerCallbacks) {
         this.mInternalTransportCallbacks = mInternalTransportCallbacks;
         this.mInternalMeshManagerCallbacks = internalMeshManagerCallbacks;
     }
@@ -224,7 +220,7 @@ class MeshProvisioningHandler implements InternalProvisioningCallbacks {
             final byte[] flagBytes = ByteBuffer.allocate(1).put((byte) flags).array();
 
             byte[] ivIndexBytes = null;
-            if (MeshParserUtils.validateIvIndexInput(mContext, ivIndex)) {
+            if (MeshParserUtils.validateIvIndexInput(ivIndex)) {
                 ivIndexBytes = ByteBuffer.allocate(4).putInt(ivIndex).array();
             }
 

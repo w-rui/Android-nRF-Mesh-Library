@@ -1,6 +1,5 @@
 package no.nordicsemi.android.meshprovisioner;
 
-import android.content.Context;
 import android.os.AsyncTask;
 
 import java.util.List;
@@ -70,7 +69,7 @@ abstract class MeshNetworkDb {
      * Returns the mesh database
      */
     @RestrictTo(RestrictTo.Scope.LIBRARY)
-    static MeshNetworkDb getDatabase(final Context context) {
+    static MeshNetworkDb getDatabase() {
         return INSTANCE;
     }
 

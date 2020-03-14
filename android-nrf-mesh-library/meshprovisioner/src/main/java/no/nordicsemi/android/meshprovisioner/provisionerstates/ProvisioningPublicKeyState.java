@@ -25,28 +25,8 @@ package no.nordicsemi.android.meshprovisioner.provisionerstates;
 
 import android.util.Log;
 
-import org.spongycastle.jce.ECNamedCurveTable;
-import org.spongycastle.jce.interfaces.ECPrivateKey;
-import org.spongycastle.jce.interfaces.ECPublicKey;
-import org.spongycastle.jce.spec.ECNamedCurveParameterSpec;
-import org.spongycastle.jce.spec.ECParameterSpec;
-import org.spongycastle.jce.spec.ECPublicKeySpec;
-import org.spongycastle.math.ec.ECCurve;
-import org.spongycastle.math.ec.ECPoint;
-import org.spongycastle.util.BigIntegers;
-
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.spec.InvalidKeySpecException;
-
-import javax.crypto.KeyAgreement;
 
 import androidx.annotation.NonNull;
 import no.nordicsemi.android.meshprovisioner.InternalTransportCallbacks;
@@ -60,12 +40,12 @@ public class ProvisioningPublicKeyState extends ProvisioningState {
     private final String TAG = ProvisioningPublicKeyState.class.getSimpleName();
     private final byte[] publicKeyXY = new byte[PROVISIONING_PUBLIC_KEY_XY_PDU_LENGTH];
     private final MeshProvisioningStatusCallbacks mStatusCallbacks;
-    private final UnprovisionedMeshNode mUnprovisionedMeshNode;
+    protected final UnprovisionedMeshNode mUnprovisionedMeshNode;
     private final InternalTransportCallbacks mInternalTransportCallbacks;
 
-    private byte[] mTempProvisioneeXY;
-    private int segmentCount = 0;
-    private ECPrivateKey mProvisionerPrivaetKey;
+    protected byte[] mTempProvisioneeXY;
+    protected int segmentCount = 0;
+    protected Object mProvisionerPrivaetKey;
 
 
     public ProvisioningPublicKeyState(final UnprovisionedMeshNode unprovisionedMeshNode, final InternalTransportCallbacks mInternalTransportCallbacks, final MeshProvisioningStatusCallbacks meshProvisioningStatusCallbacks) {
@@ -95,23 +75,11 @@ public class ProvisioningPublicKeyState extends ProvisioningState {
         return true;
     }
 
-    private void generateKeyPairs() {
+    protected void generateKeyPairs() {
 
         try {
-            final ECNamedCurveParameterSpec parameterSpec = ECNamedCurveTable.getParameterSpec("secp256r1");
-            final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECDH", "SC");
-            keyPairGenerator.initialize(parameterSpec);
-            final KeyPair keyPair = keyPairGenerator.generateKeyPair();
-            final ECPublicKey publicKey = (ECPublicKey) keyPair.getPublic();
-
-            mProvisionerPrivaetKey = (ECPrivateKey) keyPair.getPrivate();
-
-            final ECPoint point = publicKey.getQ();
-
-            final BigInteger x = point.getXCoord().toBigInteger();
-            final BigInteger y = point.getYCoord().toBigInteger();
-            final byte[] tempX = BigIntegers.asUnsignedByteArray(32, x);
-            final byte[] tempY = BigIntegers.asUnsignedByteArray(32, y);
+            final byte[] tempX = null;
+            final byte[] tempY = null;
 
             Log.v(TAG, "X: length: " + tempX.length + " " + MeshParserUtils.bytesToHex(tempX, false));
             Log.v(TAG, "Y: length: " + tempY.length + " " + MeshParserUtils.bytesToHex(tempY, false));
@@ -120,6 +88,7 @@ public class ProvisioningPublicKeyState extends ProvisioningState {
             System.arraycopy(tempX, 0, tempXY, 0, tempX.length);
             System.arraycopy(tempY, 0, tempXY, tempY.length, tempY.length);
 
+            if (true) throw new RuntimeException("Should implement with J2OBJC.");
             mUnprovisionedMeshNode.setProvisionerPublicKeyXY(tempXY);
 
             Log.v(TAG, "XY: " + MeshParserUtils.bytesToHex(tempXY, true));
@@ -141,7 +110,7 @@ public class ProvisioningPublicKeyState extends ProvisioningState {
         return buffer.array();
     }
 
-    private void generateSharedECDHSecret(final byte[] provisioneePublicKeyXYPDU) {
+    protected void generateSharedECDHSecret(final byte[] provisioneePublicKeyXYPDU) {
         if (provisioneePublicKeyXYPDU.length != 66) {
             throw new IllegalArgumentException("Invalid Provisionee Public Key PDU," +
                     " length of the Provisionee public key must be 66 bytes, but was " + provisioneePublicKeyXYPDU.length);
@@ -163,37 +132,11 @@ public class ProvisioningPublicKeyState extends ProvisioningState {
         final byte[] provisioneeY = convertToLittleEndian(yComponent, ByteOrder.LITTLE_ENDIAN);
         Log.v(TAG, "Provsionee Y: " + MeshParserUtils.bytesToHex(provisioneeY, false));
 
-        final BigInteger x = BigIntegers.fromUnsignedByteArray(xy, 0, 32);
-        final BigInteger y = BigIntegers.fromUnsignedByteArray(xy, 32, 32);
+        final byte[] sharedECDHSecret = null;
+        if (true) throw new RuntimeException("Should implement with J2OBJC.");
 
-        final ECParameterSpec ecParameters = ECNamedCurveTable.getParameterSpec("secp256r1");
-        ECCurve curve = ecParameters.getCurve();
-        ECPoint ecPoint = curve.validatePoint(x, y);
-
-
-        ECPublicKeySpec keySpec = new ECPublicKeySpec(ecPoint, ecParameters);
-        KeyFactory keyFactory;
-        try {
-            keyFactory = KeyFactory.getInstance("ECDH", "SC");
-            ECPublicKey publicKey = (ECPublicKey) keyFactory.generatePublic(keySpec);
-
-            KeyAgreement a = KeyAgreement.getInstance("ECDH", "SC");
-            a.init(mProvisionerPrivaetKey);
-            a.doPhase(publicKey, true);
-
-            final byte[] sharedECDHSecret = a.generateSecret();
-            mUnprovisionedMeshNode.setSharedECDHSecret(sharedECDHSecret);
-            Log.v(TAG, "ECDH Secret: " + MeshParserUtils.bytesToHex(sharedECDHSecret, false));
-
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        }
+        mUnprovisionedMeshNode.setSharedECDHSecret(sharedECDHSecret);
+        Log.v(TAG, "ECDH Secret: " + MeshParserUtils.bytesToHex(sharedECDHSecret, false));
     }
 
     private byte[] convertToLittleEndian(final byte[] data, final ByteOrder order) {

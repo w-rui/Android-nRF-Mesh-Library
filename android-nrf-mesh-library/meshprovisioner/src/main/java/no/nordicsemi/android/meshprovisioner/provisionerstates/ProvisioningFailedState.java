@@ -22,10 +22,7 @@
 
 package no.nordicsemi.android.meshprovisioner.provisionerstates;
 
-import android.content.Context;
 import androidx.annotation.NonNull;
-
-import no.nordicsemi.android.meshprovisioner.R;
 
 public class ProvisioningFailedState extends ProvisioningState {
 
@@ -56,29 +53,29 @@ public class ProvisioningFailedState extends ProvisioningState {
         return error;
     }
 
-    public static String parseProvisioningFailure(final Context context, final int errorCode) {
+    public static String parseProvisioningFailure(final int errorCode) {
         switch (ProvisioningFailureCode.fromErrorCode(errorCode)) {
             case PROHIBITED:
-                return context.getString(R.string.error_prohibited);
+                return "Prohibited!";
             case INVALID_PDU:
-                return context.getString(R.string.error_invalid_pdu);
+                return "The provisioning protocol PDU is not recognized by the device!";
             case INVALID_FORMAT:
-                return context.getString(R.string.error_invalid_format);
+                return "The arguments of the protocol PDUs are outside expected values or the length of the PDU is different than expected!";
             case UNEXPECTED_PDU:
-                return context.getString(R.string.error_prohibited);
+                return "Prohibited!";
             case CONFIRMATION_FAILED:
-                return context.getString(R.string.error_confirmation_failed);
+                return "The computed confirmation value was not successfully verified!";
             case OUT_OF_RESOURCES:
-                return context.getString(R.string.error_prohibited);
+                return "Prohibited!";
             case DECRYPTION_FAILED:
-                return context.getString(R.string.error_decryption_failed);
+                return "The Data block was not successfully decrypted!";
             case UNEXPECTED_ERROR:
-                return context.getString(R.string.error_unexpected_error);
+                return "An unexpected error occurred that may not be recoverable!";
             case CANNOT_ASSIGN_ADDRESSES:
-                return context.getString(R.string.error_cannot_assign_addresses);
+                return "The device cannot assign consecutive unicast addresses to all elements!";
             case UNKNOWN_ERROR_CODE:
             default:
-                return context.getString(R.string.error_rfu);
+                return "Reserved for Future Use!";
         }
     }
 

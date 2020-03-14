@@ -22,7 +22,6 @@
 
 package no.nordicsemi.android.meshprovisioner.transport;
 
-import android.content.Context;
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -54,7 +53,6 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
 
     private static final String TAG = BaseMeshMessageHandler.class.getSimpleName();
 
-    protected final Context mContext;
     protected final InternalTransportCallbacks mInternalTransportCallbacks;
     private final NetworkLayerCallbacks networkLayerCallbacks;
     private final UpperTransportLayerCallbacks upperTransportLayerCallbacks;
@@ -65,16 +63,13 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
     /**
      * Constructs BaseMessageHandler
      *
-     * @param context                      Context
      * @param internalTransportCallbacks   {@link InternalTransportCallbacks} Callbacks
      * @param networkLayerCallbacks        {@link NetworkLayerCallbacks} network layer callbacks
      * @param upperTransportLayerCallbacks {@link UpperTransportLayerCallbacks} upper transport layer callbacks
      */
-    protected BaseMeshMessageHandler(@NonNull final Context context,
-                                     @NonNull final InternalTransportCallbacks internalTransportCallbacks,
+    protected BaseMeshMessageHandler(@NonNull final InternalTransportCallbacks internalTransportCallbacks,
                                      @NonNull final NetworkLayerCallbacks networkLayerCallbacks,
                                      @NonNull final UpperTransportLayerCallbacks upperTransportLayerCallbacks) {
-        this.mContext = context;
         this.mInternalTransportCallbacks = internalTransportCallbacks;
         this.networkLayerCallbacks = networkLayerCallbacks;
         this.upperTransportLayerCallbacks = upperTransportLayerCallbacks;
@@ -209,7 +204,7 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
     private MeshTransport getTransport(final int address) {
         MeshTransport transport = transportSparseArray.get(address);
         if (transport == null) {
-            transport = new MeshTransport(mContext);
+            transport = new MeshTransport();
             transport.setNetworkLayerCallbacks(networkLayerCallbacks);
             transport.setUpperTransportLayerCallbacks(upperTransportLayerCallbacks);
             transportSparseArray.put(address, transport);

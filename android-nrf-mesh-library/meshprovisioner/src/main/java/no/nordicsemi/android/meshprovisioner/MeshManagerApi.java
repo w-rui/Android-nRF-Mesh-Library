@@ -22,14 +22,12 @@
 
 package no.nordicsemi.android.meshprovisioner;
 
-import android.content.Context;
 import android.net.Uri;
 import android.os.Handler;
 import android.util.Log;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -85,7 +83,6 @@ public class MeshManagerApi implements MeshMngrApi {
     private final static int ADVERTISED_NETWORK_ID_OFFSET = 1; //Offset of the network id contained in the advertisement service data
     private final static int ADVERTISED_NETWORK_ID_LENGTH = 8; //Length of the network id contained in the advertisement service data
 
-    private Context mContext;
     private final Handler mHandler;
     private MeshManagerCallbacks mMeshManagerCallbacks;
     private MeshProvisioningHandler mMeshProvisioningHandler;
@@ -112,14 +109,12 @@ public class MeshManagerApi implements MeshMngrApi {
      * {@link #setMeshStatusCallbacks(MeshStatusCallbacks)}.
      * <p>
      *
-     * @param context context
      */
-    public MeshManagerApi(@NonNull final Context context, MeshNetworkCallbacks networkCallbacks) {
-        this.mContext = context;
+    public MeshManagerApi(MeshNetworkCallbacks networkCallbacks) {
         this.forwardCb = networkCallbacks;
         mHandler = new Handler();
-        mMeshProvisioningHandler = new MeshProvisioningHandler(context, internalTransportCallbacks, internalMeshMgrCallbacks);
-        mMeshMessageHandler = new MeshMessageHandler(context, internalTransportCallbacks, networkLayerCallbacks, upperTransportLayerCallbacks);
+        mMeshProvisioningHandler = new MeshProvisioningHandler(internalTransportCallbacks, internalMeshMgrCallbacks);
+        mMeshMessageHandler = new MeshMessageHandler(internalTransportCallbacks, networkLayerCallbacks, upperTransportLayerCallbacks);
         initBouncyCastle();
         //Init database
         // initDb(context);
@@ -180,11 +175,11 @@ public class MeshManagerApi implements MeshMngrApi {
     }
 
     private void initBouncyCastle() {
-        Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
+        throw new RuntimeException("Should implement with J2OBJC.");
     }
 
     @Deprecated
-    private void initDb(final Context context) {
+    private void initDb() {
         throw new RuntimeException("Should never call this.");
     }
 
@@ -772,7 +767,7 @@ public class MeshManagerApi implements MeshMngrApi {
     @Override
     public void importMeshNetwork(@NonNull final Uri uri) {
         if (uri.getPath() != null) {
-            NetworkImportExportUtils.importMeshNetwork(mContext, uri, networkLoadCallbacks);
+            NetworkImportExportUtils.importMeshNetwork(uri, networkLoadCallbacks);
         } else {
             mMeshManagerCallbacks.onNetworkImportFailed("URI getPath() returned null!");
         }
@@ -780,7 +775,7 @@ public class MeshManagerApi implements MeshMngrApi {
 
     @Override
     public void importMeshNetworkJson(@NonNull String networkJson) {
-        NetworkImportExportUtils.importMeshNetworkFromJson(mContext, networkJson, networkLoadCallbacks);
+        NetworkImportExportUtils.importMeshNetworkFromJson(networkJson, networkLoadCallbacks);
     }
 
     @SuppressWarnings("FieldCanBeLocal")

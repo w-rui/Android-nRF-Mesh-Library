@@ -22,7 +22,6 @@
 
 package no.nordicsemi.android.meshprovisioner.transport;
 
-import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
 
@@ -48,31 +47,26 @@ final class MeshTransport extends NetworkLayer {
 
     /**
      * Constructs the MeshTransport
-     *
-     * @param context context
      */
-    MeshTransport(@NonNull final Context context) {
-        this.mContext = context;
+    MeshTransport() {
         initHandler();
     }
 
     /**
      * Constructs MeshTransport
      *
-     * @param context Context
      * @param node    Mesh node
      */
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
-    MeshTransport(@NonNull final Context context, @NonNull final ProvisionedMeshNode node) {
+    MeshTransport(@NonNull final ProvisionedMeshNode node) {
         super();
-        this.mContext = context;
         this.mMeshNode = node;
         initHandler();
     }
 
     @Override
     protected final void initHandler() {
-        this.mHandler = new Handler(mContext.getMainLooper());
+        this.mHandler = Handler.getMain();
     }
 
     @Override

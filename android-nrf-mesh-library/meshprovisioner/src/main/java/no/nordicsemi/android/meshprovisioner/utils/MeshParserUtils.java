@@ -21,7 +21,6 @@
  */
 package no.nordicsemi.android.meshprovisioner.utils;
 
-import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
@@ -39,7 +38,6 @@ import java.util.UUID;
 
 import androidx.annotation.NonNull;
 import no.nordicsemi.android.meshprovisioner.NodeKey;
-import no.nordicsemi.android.meshprovisioner.R;
 
 @SuppressWarnings({"WeakerAccess", "BooleanMethodIsAlwaysInverted"})
 public class MeshParserUtils {
@@ -178,15 +176,14 @@ public class MeshParserUtils {
     /**
      * Validates the Key Index input
      *
-     * @param context context
      * @param input   Key Index input
      * @return true if the Key Index is a valid value
      * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the error
      */
-    public static boolean validateKeyIndexInput(final Context context, final String input) throws IllegalArgumentException {
+    public static boolean validateKeyIndexInput(final String input) throws IllegalArgumentException {
 
         if (TextUtils.isEmpty(input)) {
-            throw new IllegalArgumentException(context.getString(R.string.error_empty_key_index));
+            throw new IllegalArgumentException("Key index cannot be empty!");
         }
 
         final Integer keyIndex;
@@ -194,10 +191,10 @@ public class MeshParserUtils {
         try {
             keyIndex = Integer.parseInt(input);
         } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException(context.getString(R.string.error_invalid_key_index));
+            throw new IllegalArgumentException("Key index must be 0 to 4095!");
         }
         if (isValidKeyIndex(keyIndex)) {
-            throw new IllegalArgumentException(context.getString(R.string.error_invalid_key_index));
+            throw new IllegalArgumentException("Key index must be 0 to 4095!");
         }
 
         return true;
@@ -206,26 +203,25 @@ public class MeshParserUtils {
     /**
      * Validates the IV Index input
      *
-     * @param context context
      * @param input   IV Index input
      * @return true if the the value is valid
      * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the error
      */
-    public static boolean validateIvIndexInput(final Context context, final String input) throws IllegalArgumentException {
+    public static boolean validateIvIndexInput(final String input) throws IllegalArgumentException {
 
         if (TextUtils.isEmpty(input)) {
-            throw new IllegalArgumentException(context.getString(R.string.error_empty_iv_index));
+            throw new IllegalArgumentException("IV Index cannot be empty!");
         }
 
         final Integer ivIndex;
         try {
             ivIndex = Integer.parseInt(input, 16);
         } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException(context.getString(R.string.error_invalid_iv_index));
+            throw new IllegalArgumentException("IV Index must be 0 to 4294967295!");
         }
 
         if (!isValidIvIndex(ivIndex)) {
-            throw new IllegalArgumentException(context.getString(R.string.error_invalid_iv_index));
+            throw new IllegalArgumentException("IV Index must be 0 to 4294967295!");
         }
 
         return true;
@@ -234,19 +230,18 @@ public class MeshParserUtils {
     /**
      * Validates the IV Index input
      *
-     * @param context context
      * @param ivIndex IV Index input
      * @return true if the the value is valid
      * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the error
      */
-    public static boolean validateIvIndexInput(final Context context, final Integer ivIndex) throws IllegalArgumentException {
+    public static boolean validateIvIndexInput(final Integer ivIndex) throws IllegalArgumentException {
 
         if (ivIndex == null) {
-            throw new IllegalArgumentException(context.getString(R.string.error_empty_iv_index));
+            throw new IllegalArgumentException("IV Index cannot be empty!");
         }
 
         if (!isValidIvIndex(ivIndex)) {
-            throw new IllegalArgumentException(context.getString(R.string.error_invalid_iv_index));
+            throw new IllegalArgumentException("IV Index must be 0 to 4294967295!");
         }
 
         return true;

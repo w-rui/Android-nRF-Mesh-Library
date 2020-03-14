@@ -24,19 +24,8 @@ package no.nordicsemi.android.meshprovisioner.utils;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.util.Log;
 
 import com.google.gson.annotations.Expose;
-
-import org.spongycastle.crypto.BlockCipher;
-import org.spongycastle.crypto.CipherParameters;
-import org.spongycastle.crypto.InvalidCipherTextException;
-import org.spongycastle.crypto.engines.AESEngine;
-import org.spongycastle.crypto.engines.AESLightEngine;
-import org.spongycastle.crypto.macs.CMac;
-import org.spongycastle.crypto.modes.CCMBlockCipher;
-import org.spongycastle.crypto.params.AEADParameters;
-import org.spongycastle.crypto.params.KeyParameter;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -142,36 +131,59 @@ public class SecureUtils {
         return calculateCMAC(data, SALT_KEY);
     }
 
+    private static class Imp {
+
+        public byte[] calculateCMAC(final byte[] data, final byte[] key) {
+            throw new RuntimeException("Should implement with J2OBJC.");
+        }
+
+        public byte[] encryptCCM(@NonNull final byte[] data,
+                                        @NonNull final byte[] key,
+                                        @NonNull final byte[] nonce,
+                                        final int micSize) {
+            throw new RuntimeException("Should implement with J2OBJC.");
+        }
+
+        public byte[] encryptCCM(@NonNull final byte[] data,
+                                        @NonNull final byte[] key,
+                                        @NonNull final byte[] nonce,
+                                        @NonNull final byte[] additionalData,
+                                        final int micSize) {
+            throw new RuntimeException("Should implement with J2OBJC.");
+        }
+
+        public byte[] decryptCCM(@NonNull final byte[] data,
+                                        @NonNull final byte[] key,
+                                        @NonNull final byte[] nonce,
+                                        final int micSize) throws ExtendedInvalidCipherTextException {
+            throw new RuntimeException("Should implement with J2OBJC.");
+        }
+
+        public byte[] decryptCCM(@NonNull final byte[] data,
+                                        @NonNull final byte[] key,
+                                        @NonNull final byte[] nonce,
+                                        @NonNull final byte[] additionalData,
+                                        final int micSize) throws ExtendedInvalidCipherTextException {
+            throw new RuntimeException("Should implement with J2OBJC.");
+        }
+
+        public byte[] encryptWithAES(final byte[] data, final byte[] key) {
+            throw new RuntimeException("Should implement with J2OBJC.");
+        }
+
+    }
+
+    private static Imp imp = new Imp();
+
     public static byte[] calculateCMAC(final byte[] data, final byte[] key) {
-        final byte[] cmac = new byte[16];
-
-        CipherParameters cipherParameters = new KeyParameter(key);
-        BlockCipher blockCipher = new AESEngine();
-        CMac mac = new CMac(blockCipher);
-
-        mac.init(cipherParameters);
-        mac.update(data, 0, data.length);
-        mac.doFinal(cmac, 0);
-        return cmac;
+        return imp.calculateCMAC(data, key);
     }
 
     public static byte[] encryptCCM(@NonNull final byte[] data,
                                     @NonNull final byte[] key,
                                     @NonNull final byte[] nonce,
                                     final int micSize) {
-        final byte[] ccm = new byte[data.length + micSize];
-
-        final CCMBlockCipher ccmBlockCipher = new CCMBlockCipher(new AESEngine());
-        final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce);
-        ccmBlockCipher.init(true, aeadParameters);
-        ccmBlockCipher.processBytes(data, 0, data.length, ccm, data.length);
-        try {
-            ccmBlockCipher.doFinal(ccm, 0);
-            return ccm;
-        } catch (InvalidCipherTextException e) {
-            Log.e(TAG, "Error wile encrypting: " + e.getMessage());
-            return null;
-        }
+        return imp.encryptCCM(data, key, nonce, micSize);
     }
 
     public static byte[] encryptCCM(@NonNull final byte[] data,
@@ -179,37 +191,14 @@ public class SecureUtils {
                                     @NonNull final byte[] nonce,
                                     @NonNull final byte[] additionalData,
                                     final int micSize) {
-        final byte[] ccm = new byte[data.length + micSize];
-
-        final CCMBlockCipher ccmBlockCipher = new CCMBlockCipher(new AESEngine());
-        final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce, additionalData);
-        ccmBlockCipher.init(true, aeadParameters);
-        ccmBlockCipher.processBytes(data, 0, data.length, ccm, data.length);
-        try {
-            ccmBlockCipher.doFinal(ccm, 0);
-            return ccm;
-        } catch (InvalidCipherTextException e) {
-            Log.e(TAG, "Error wile encrypting: " + e.getMessage());
-            return null;
-        }
+        return imp.encryptCCM(data, key, nonce, additionalData, micSize);
     }
 
     public static byte[] decryptCCM(@NonNull final byte[] data,
                                     @NonNull final byte[] key,
                                     @NonNull final byte[] nonce,
                                     final int micSize) throws ExtendedInvalidCipherTextException {
-        final byte[] ccm = new byte[data.length - micSize];
-
-        final CCMBlockCipher ccmBlockCipher = new CCMBlockCipher(new AESEngine());
-        final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce);
-        ccmBlockCipher.init(false, aeadParameters);
-        ccmBlockCipher.processBytes(data, 0, data.length, ccm, 0);
-        try {
-            ccmBlockCipher.doFinal(ccm, 0);
-        } catch (InvalidCipherTextException e) {
-            throw new ExtendedInvalidCipherTextException(e.getMessage(), e.getCause(), "decryptCCM");
-        }
-        return ccm;
+        return imp.decryptCCM(data, key, nonce, micSize);
     }
 
     public static byte[] decryptCCM(@NonNull final byte[] data,
@@ -217,18 +206,7 @@ public class SecureUtils {
                                     @NonNull final byte[] nonce,
                                     @NonNull final byte[] additionalData,
                                     final int micSize) throws ExtendedInvalidCipherTextException {
-        final byte[] ccm = new byte[data.length - micSize];
-
-        final CCMBlockCipher ccmBlockCipher = new CCMBlockCipher(new AESEngine());
-        final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce, additionalData);
-        ccmBlockCipher.init(false, aeadParameters);
-        ccmBlockCipher.processBytes(data, 0, data.length, ccm, 0);
-        try {
-            ccmBlockCipher.doFinal(ccm, 0);
-        } catch (InvalidCipherTextException e) {
-            throw new ExtendedInvalidCipherTextException(e.getMessage(), e.getCause(), "decryptCCM");
-        }
-        return ccm;
+        return imp.decryptCCM(data, key, nonce, additionalData, micSize);
     }
 
     public static byte[] calculateK1(final byte[] ecdh, final byte[] confirmationSalt, final byte[] text) {
@@ -444,13 +422,7 @@ public class SecureUtils {
     }
 
     public static byte[] encryptWithAES(final byte[] data, final byte[] key) {
-        final byte[] encrypted = new byte[data.length];
-        final CipherParameters cipherParameters = new KeyParameter(key);
-        final AESLightEngine engine = new AESLightEngine();
-        engine.init(true, cipherParameters);
-        engine.processBlock(data, 0, encrypted, 0);
-
-        return encrypted;
+        return imp.encryptWithAES(data, key);
     }
 
     public static int getNetMicLength(final int ctl) {
