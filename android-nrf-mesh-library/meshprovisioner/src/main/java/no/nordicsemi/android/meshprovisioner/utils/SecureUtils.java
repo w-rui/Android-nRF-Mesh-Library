@@ -131,7 +131,7 @@ public class SecureUtils {
         return calculateCMAC(data, SALT_KEY);
     }
 
-    private static class Imp {
+    protected static class Imp {
 
         public byte[] calculateCMAC(final byte[] data, final byte[] key) {
             throw new RuntimeException("Should implement with J2OBJC.");
