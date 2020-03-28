@@ -170,9 +170,9 @@ public class Group implements Parcelable {
 
         if (addressLabel == null) {
             if (MeshAddress.isValidVirtualAddress(address)) {
-                throw new IllegalArgumentException("Please provide a Label UUID when creating groups using virtual addresses");
+                throw new IllegalArgumentException("Please provide a Label UUID when creating groups using virtual addresses: 0x" + Integer.toHexString(address));
             } else if (!MeshAddress.isValidGroupAddress(address)) {
-                throw new IllegalArgumentException("Address of the group must be a valid group address or a virtual address");
+                throw new IllegalArgumentException("Address of the group must be a valid group address or a virtual address: 0x" + Integer.toHexString(address));
             }
             this.address = address;
             generateParentAddressLabel(parentAddressLabel, parentAddress);
